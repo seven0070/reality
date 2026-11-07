@@ -721,8 +721,12 @@ export function dispatchMCPToolCall(
 ): { state: MultiverseState; result: any } {
   switch (toolName) {
     case 'create_reality': {
+      if (typeof args.blueprint !== 'string' || !args.blueprint.trim()) {
+        return { state, result: { success: false, error: 'create_reality needs a non-empty "blueprint" string.' } };
+      }
+      const safeName = typeof args.name === 'string' && args.name.trim() ? args.name.trim() : args.blueprint.trim().slice(0, 40);
       const res = instantiateReality(state, {
-        name: args.name,
+        name: safeName,
         blueprint: args.blueprint,
         stratum: args.stratum,
         dimensionality: args.dimensionality
