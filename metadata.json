@@ -1,0 +1,6 @@
+{
+  "name": "NullVoid Sandbox :: Multiverse & Autonomous Agent Hypervisor",
+  "description": "Hermetic sandbox engine for instantiating N-dimensional realities from absolute null, driven by natural language decrees, omni-epistemic laws, and autonomous MCP agents.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
