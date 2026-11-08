@@ -20,8 +20,11 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+// Only start Firebase when a web API key is configured. Without one the app
+// still loads (sandbox, laws, MCP all work); only Google Drive sign-in is off.
+export const firebaseEnabled = Boolean(firebaseConfig.apiKey);
+const app = firebaseEnabled ? initializeApp(firebaseConfig) : null;
+export const auth = (app ? getAuth(app) : null) as ReturnType<typeof getAuth>;
 
 export const DRIVE_SCOPES = [
   'https://www.googleapis.com/auth/drive',
@@ -42,6 +45,7 @@ export const initAuth = (
   onAuthSuccess?: (user: User, token: string) => void,
   onAuthFailure?: () => void
 ) => {
+  if (!firebaseEnabled) { if (onAuthFailure) onAuthFailure(); return () => {}; }
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
       if (cachedAccessToken) {
@@ -59,6 +63,7 @@ export const initAuth = (
 
 export const googleSignIn = async (): Promise<{ user: User; accessToken: string } | null> => {
   try {
+    if (!firebaseEnabled) throw new Error('Google sign-in is not configured. Set the VITE_FIREBASE_* values in .env (see .env.example).');
     isSigningIn = true;
     const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -89,6 +94,6 @@ export const getAccessToken = async (): Promise<string | null> => {
 };
 
 export const googleLogout = async () => {
-  await signOut(auth);
+  if (firebaseEnabled) await signOut(auth);
   cachedAccessToken = null;
 };
