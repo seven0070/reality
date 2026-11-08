@@ -9,3 +9,6 @@ coverage/
 
 # Firebase web config — contains a live API key; use .env instead (see .env.example)
 firebase-applet-config.json
+
+# Local saved multiverse state
+data/
