@@ -375,6 +375,8 @@ app.get('/api/mcp/config', (req: Request, res: Response) => {
   });
 });
 
+const mcpSessions = new Map<string, Response>();
+
 // MCP Server-Sent Events (SSE) Stream
 app.get('/api/mcp/sse', (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
@@ -382,6 +384,8 @@ app.get('/api/mcp/sse', (req: Request, res: Response) => {
   res.setHeader('Connection', 'keep-alive');
 
   const sessionId = `mcp_sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  res.flushHeaders?.();
+  mcpSessions.set(sessionId, res);
 
   // Send initial endpoint event per MCP SSE specification
   res.write(`event: endpoint\ndata: /api/mcp/message?sessionId=${sessionId}\n\n`);
@@ -393,12 +397,35 @@ app.get('/api/mcp/sse', (req: Request, res: Response) => {
 
   req.on('close', () => {
     clearInterval(interval);
+    mcpSessions.delete(sessionId);
   });
 });
 
 // MCP JSON-RPC Message Handler
-app.post('/api/mcp/message', (req: Request, res: Response) => {
+app.post('/api/mcp/message', (req: Request, httpRes: Response) => {
   const { jsonrpc = '2.0', id, method, params } = req.body || {};
+  // Standard MCP SSE transport: the reply goes down the open SSE stream and the
+  // POST is just acknowledged with 202. Without a stream, reply as plain JSON.
+  const stream = mcpSessions.get(String(req.query.sessionId || ''));
+  const res: any = stream
+    ? {
+        json: (payload: any) => {
+          stream.write(`event: message\ndata: ${JSON.stringify(payload)}\n\n`);
+          return httpRes.status(202).send('Accepted');
+        },
+        status: (code: number) => ({
+          json: (payload: any) => {
+            stream.write(`event: message\ndata: ${JSON.stringify(payload)}\n\n`);
+            return httpRes.status(202).send('Accepted');
+          },
+        }),
+        sendStatus: (code: number) => httpRes.sendStatus(code),
+      }
+    : httpRes;
+  // Notifications (no id) need no reply.
+  if (method && typeof method === 'string' && method.startsWith('notifications/')) {
+    return httpRes.status(202).send('Accepted');
+  }
 
   if (!method) {
     return res.status(400).json({ jsonrpc: '2.0', id, error: { code: -32600, message: 'Invalid Request' } });
