@@ -1,0 +1,55 @@
+# NullVoid Sandbox :: Multiverse & Autonomous Agent Hypervisor
+
+> Hermetic sandbox engine for instantiating N-dimensional realities from absolute null, driven by natural language decrees, omni-epistemic laws, and autonomous MCP agents. Built in Google AI Studio, run locally with Node.js.
+
+## Run locally
+
+- Install dependencies: `npm install`
+- Set `GEMINI_API_KEY` in `.env` (optional: without a key the server uses a deterministic simulation fallback for decree compilation and the autonomous agent loop)
+- Set the Firebase web config in `.env` as `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` (see `.env.example`; never commit real values)
+- Run the app: `npm run dev` (starts the server on port 3000)
+- Build: `npm run build`
+- Test: `npm test`
+- Lint: `npm run lint`
+
+## Architecture
+
+- `server.ts`: Express server with Vite middleware. Holds the multiverse state in memory. Serves the React app, the Gemini decree endpoints, and the MCP gateway.
+- `src/engine/multiverse.ts`: the sandbox engine. Reality instantiation, law and entity mutation, time stepping, rollback, the MCP tool registry, the resource registry, and the root meta-laws.
+- `src/types/multiverse.ts`: TypeScript types for realities, laws, entities, anomalies, and the multiverse state.
+- `src/engine/multiverse.test.ts`: engine tests.
+- `src/App.tsx`: the React app shell.
+- `src/components/`: UI panels including SandboxCanvas, RealitiesList, AgentDeck, EntitiesInspector, LawsInspector, HistoryLedger, PromptBar, TopBar, TelemetryRibbon, MCPGatewayModal, MetaLawsModal, and GoogleDriveModal.
+- `src/services/firebaseAuth.ts`: Firebase auth, reading config from `VITE_FIREBASE_*` environment variables.
+- `src/services/googleDriveService.ts`: Google Drive save and restore for reality exports.
+
+## How realities work
+
+- A reality is created from a natural language decree, compiled by Gemini (`POST /api/gemini/decree`) into a structured blueprint of laws, entities, and anomalies. Without a Gemini key the server falls back to a deterministic heuristic blueprint.
+- Each reality has a stratum (EMPIRICAL, ABSTRACT, or HYBRID), a dimensionality, a status, a step count, entropy, expansion, laws, entities, and anomalies.
+- Realities are DORMANT by default (Meta-Law 002). Time advances only when a reality is ACTIVE.
+- Nine root meta-laws govern all realities, including zero external work (Meta-Law 004), null external units with purely relational internal ratios (Meta-Law 005), and that anything can be done, including impossible paradoxes and law breaks (Meta-Law 007).
+- State lives only in server memory. Restarting the server wipes all realities except the two genesis seeds.
+- Genesis seeds: R_0 The Primordial Void (DORMANT, Step 0, 1 law, 0 entities) and R_1 The Axiomatic Continuum (DORMANT, Step 0, 4 laws, 3 entities).
+
+## MCP gateway
+
+- The server is a real MCP server (protocol `2024-11-05`, server name `nullvoid-hypervisor`, version `1.0.0`).
+- Endpoints: `GET /api/mcp/config`, `GET /api/mcp/sse`, `POST /api/mcp/message`.
+- Configuration for external agents is served at `/api/mcp/config`.
+- Tools: `create_reality`, `set_reality_state`, `step_reality_time`, `inject_entity`, `mutate_law`, `rollback_reality`.
+- Resources: `realities://registry` (the whole registry) and `realities://<realityId>/state` (one reality's state vector).
+- The autonomous agent loop (`POST /api/gemini/autonomous-loop`) runs a perception, reasoning, action, persistence cycle and actuates one MCP tool call per cycle.
+
+## Key files
+
+- [server.ts](server.ts)
+- [src/engine/multiverse.ts](src/engine/multiverse.ts)
+- [src/types/multiverse.ts](src/types/multiverse.ts)
+- [src/engine/multiverse.test.ts](src/engine/multiverse.test.ts)
+- [src/App.tsx](src/App.tsx)
+- [src/services/firebaseAuth.ts](src/services/firebaseAuth.ts)
+- [src/services/googleDriveService.ts](src/services/googleDriveService.ts)
+- [package.json](package.json)
+- [README.md](README.md)
+- [.env.example](.env.example)
