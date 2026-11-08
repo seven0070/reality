@@ -719,6 +719,18 @@ export function dispatchMCPToolCall(
   toolName: string,
   args: Record<string, any>
 ): { state: MultiverseState; result: any } {
+  if (toolName !== 'create_reality') {
+    const rid = args.realityId;
+    if (typeof rid !== 'string' || !state.realities[rid]) {
+      return {
+        state,
+        result: {
+          success: false,
+          error: `Unknown reality "${rid}". Known realities: ${Object.keys(state.realities).join(', ')}.`
+        }
+      };
+    }
+  }
   switch (toolName) {
     case 'create_reality': {
       if (typeof args.blueprint !== 'string' || !args.blueprint.trim()) {
