@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -24,7 +25,28 @@ const PORT = 3000;
 app.use(express.json());
 
 // In-memory hypervisor state on the server
-let serverMultiverseState = createInitialMultiverseState();
+// Persisted to disk so realities and their history survive restarts (Meta-Law 002).
+const STATE_FILE = path.join(__dirname, 'data', 'multiverse-state.json');
+function loadState() {
+  try {
+    if (fs.existsSync(STATE_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+      if (parsed && parsed.realities) return parsed;
+    }
+  } catch (e) {
+    console.warn('[NullVoid Kernel] Could not read saved state, starting fresh:', (e as Error).message);
+  }
+  return createInitialMultiverseState();
+}
+function saveState() {
+  try {
+    fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
+    fs.writeFileSync(STATE_FILE, JSON.stringify(serverMultiverseState));
+  } catch (e) {
+    console.warn('[NullVoid Kernel] Could not save state:', (e as Error).message);
+  }
+}
+let serverMultiverseState = loadState();
 
 // Initialize Google GenAI client if a real key is present
 const rawKey = process.env.GEMINI_API_KEY || '';
@@ -421,6 +443,7 @@ app.post('/api/mcp/message', (req: Request, res: Response) => {
       const toolArgs = params?.arguments || {};
       const { state: updatedState, result } = dispatchMCPToolCall(serverMultiverseState, toolName, toolArgs);
       serverMultiverseState = updatedState;
+      saveState();
 
       return res.json({
         jsonrpc: '2.0',
